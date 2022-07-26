@@ -1,0 +1,19 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = https://github.com/quangpao/substrate-node-template-1.git
+	fetch = +refs/tags/latest:refs/tags/latest
+[remote "github"]
+	url = https://github.com/quangpao/substrate-node-template.git
+	fetch = +refs/heads/*:refs/remotes/github/*
+[lfs]
+	repositoryformatversion = 0
+[remote "upstream"]
+	url = https://github.com/substrate-developer-hub/substrate-node-template
+	fetch = +refs/heads/*:refs/remotes/upstream/*
+[branch "quangpou"]
+	remote = origin
+	merge = refs/heads/quangpou
