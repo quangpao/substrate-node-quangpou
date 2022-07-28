@@ -15,6 +15,8 @@ mod benchmarking;
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use frame_support::inherent::Vec;
+use frame_support::dispatch::fmt;
+use frame_support::log;
 use frame_support::traits::Randomness;
 use frame_support::traits::Currency;
 use frame_support::traits::UnixTime;
@@ -26,7 +28,7 @@ pub mod pallet {
 
 	pub use super::*;
 
-	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+	#[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
 	#[scale_info(skip_type_params(T))]
 	pub struct Kitties<T: Config> {
 		id: Id,
@@ -36,9 +38,24 @@ pub mod pallet {
 		gender: Gender,
 		create_date: u64,
 	}
+
+	impl<T: Config> fmt::Debug for Kitties<T>{
+		fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+			f.debug_struct("Kitty")
+				.field("id", &self.id)
+				.field("dna", &self.dna)
+				.field("owner", &self.owner)
+				.field("price", &self.price)
+				.field("gender", &self.gender)
+				.field("create date", &self.create_date)
+				.finish()
+		}
+	}
+
+
 	pub type Id = u32;
 
-	#[derive(Clone, Encode, Decode, PartialEq, Copy, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Clone, Encode, Decode, PartialEq, Copy, TypeInfo, MaxEncodedLen, Debug)]
 	pub enum Gender {
 		Male,
 		Female,
@@ -106,6 +123,7 @@ pub mod pallet {
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		KittyStore(Vec<u8>, u32),
+		KittyTransfer(Id, T::AccountId),
 
 	}
 
@@ -114,15 +132,19 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// Error names should be descriptive.
 		/// Errors should have helpful documentation associated with them.
-		StorageOverflow,
+		TooManyKitties,
+		KittyNotExist,
+		// KittyAlreadyExist,
+		NotOwner,
+
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
 
-		#[pallet::weight(50_700_000 + T::DbWeight::get().reads_writes(5, 4))]
-		pub fn create_kitty(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+		#[pallet::weight(50_700_000 + T::DbWeight::get().reads_writes(3, 2))]
+		pub fn create_kitty(origin: OriginFor<T>, price: u32) -> DispatchResultWithPostInfo {
 
 			let who = ensure_signed(origin)?;
 			
@@ -132,7 +154,7 @@ pub mod pallet {
 				Some(k) => k,
 				None => Vec::new(),
 			};
-			ensure!(kitty_owner.len() < <T as Config>::MaxAddend::get().try_into().unwrap(), Error::<T>::StorageOverflow);
+			ensure!(kitty_owner.len() < <T as Config>::MaxAddend::get().try_into().unwrap(), Error::<T>::TooManyKitties);
 
 			//check the total balance of who for debug
 			log::info!("total_balance: {:?}", T::KittyCurrency::total_balance(&who));
@@ -149,11 +171,11 @@ pub mod pallet {
 				id: current_id,
 				dna: dna.clone(),
 				owner: who.clone(),
-				price: 0u32.into(),
+				price: price.into(),
 				gender: gender,
 				create_date: T::TimeProvider::now().as_secs(),
 			};
-
+			log::info!("Kitty : {:?}", &kitty);
 			<Kitty<T>>::insert(current_id, kitty);
 			<KittyNumber<T>>::put(current_id);
 
@@ -172,9 +194,9 @@ pub mod pallet {
 		pub fn change_owner(origin: OriginFor<T>, kitty_id: Id, new_owner: T::AccountId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let kitty = <Kitty<T>>::get(kitty_id);
-			ensure!(kitty.is_some(), "This kitty does not exist");
+			ensure!(kitty.is_some(), Error::<T>::KittyNotExist);
 			let mut kitty = kitty.unwrap();
-			ensure!(kitty.owner == sender, "You do not own this kitty");
+			ensure!(kitty.owner == sender, Error::<T>::NotOwner);
 			let kitty_owner = <KittyOwner<T>>::get(sender.clone());
 			let mut kitty_owner = match kitty_owner{
 				Some(k) => k,
@@ -190,9 +212,10 @@ pub mod pallet {
 				Some(k) => k,
 				None => Vec::new(),
 			};
-			ensure!(kitty_owner.len() < <T as Config>::MaxAddend::get().try_into().unwrap(), Error::<T>::StorageOverflow);
+			ensure!(kitty_owner.len() < <T as Config>::MaxAddend::get().try_into().unwrap(), Error::<T>::TooManyKitties);
 			kitty_owner.push(kitty);
 			<KittyOwner<T>>::insert(new_owner.clone(), kitty_owner);
+			Self::deposit_event(Event::KittyTransfer(kitty_id, new_owner));
 			Ok(())
 		}
 

@@ -11,7 +11,8 @@ benchmarks!{
 
 	create_kitty {
 		let caller: T::AccountId = whitelisted_caller();
-	}: create_kitty(RawOrigin::Signed(caller))
+		let price = 50;
+	}: create_kitty(RawOrigin::Signed(caller), price)
 
 	verify {
 		assert_eq!(KittyNumber::<T>::get(), 1);
@@ -19,9 +20,9 @@ benchmarks!{
 
 	change_owner {
 		let caller: T::AccountId = whitelisted_caller();
-
+		let price= 50;
 		let caller_origin = <T as frame_system::Config>::Origin::from(RawOrigin::Signed(caller.clone()));
-		Kitties::<T>::create_kitty(caller_origin);
+		Kitties::<T>::create_kitty(caller_origin, price);
 		let kitty_id = KittyNumber::<T>::get();
 		let receiver: T::AccountId = account("receiver", 0, 0);
 		
