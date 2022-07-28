@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// <https://docs.substrate.io/v3/runtime/frame>
+
 pub use pallet::*;
 
 #[cfg(test)]
@@ -18,45 +16,17 @@ use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use frame_support::inherent::Vec;
 use frame_support::traits::Randomness;
-// use frame_support::storage::bounded_vec;
-// use scale_info::prelude::*;
 use frame_support::traits::Currency;
 use frame_support::traits::UnixTime;
 // use frame_support::traits::StorageInstance;
 type BalanceOf<T> = <<T as Config>::KittyCurrency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-// type CreateDate<T> = <<T as Config>::TimeProvider as UnixTime<<T as frame_system::Config>::BlockNumber>>::Timestamp;
-
-// impt<T: Config> Time for Pallet<T> {
-// 	type Moment = T::Moment;
-
-// 	fn now() -> Self::Moment {
-// 		Self::now()
-// 	}
-// }
-
-// impl<T: Config> UnixTime for Pallet<T> {
-// 	fn now() -> core::time::Duration {
-// 		let now = Self::now();
-// 		sp_std::if_std! {
-// 			if now 	== T::Moment::zero() {
-// 				log::error!(
-// 					target: "runtime::timestamp",
-// 					"`pallet-timestamp::UnixTime::now` is called at the genesis, invalid value returned: 0",
-// 				);
-// 			}
-// 		}
-// 		core::time::Duration::from_millis(now.saturated_into::<u64>())
-// 	}
-// }
-
-
 
 #[frame_support::pallet]
 pub mod pallet {
 
 	pub use super::*;
 
-	#[derive(TypeInfo, Default, Encode, Decode)]
+	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
 	#[scale_info(skip_type_params(T))]
 	pub struct Kitties<T: Config> {
 		id: Id,
@@ -68,7 +38,7 @@ pub mod pallet {
 	}
 	pub type Id = u32;
 
-	#[derive(TypeInfo, Encode, Decode, Debug)]
+	#[derive(Clone, Encode, Decode, PartialEq, Copy, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 	pub enum Gender {
 		Male,
 		Female,
@@ -151,7 +121,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 
 
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(50_700_000 + T::DbWeight::get().reads_writes(5, 4))]
 		pub fn create_kitty(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 
 			let who = ensure_signed(origin)?;
@@ -198,7 +168,7 @@ pub mod pallet {
 
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(21_900_000 + T::DbWeight::get().reads_writes(3, 2))]
 		pub fn change_owner(origin: OriginFor<T>, kitty_id: Id, new_owner: T::AccountId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let kitty = <Kitty<T>>::get(kitty_id);

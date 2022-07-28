@@ -4,7 +4,7 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as Kitties;
-use frame_benchmarking::{benchmarks, whitelisted_caller};
+use frame_benchmarking::{benchmarks, whitelisted_caller, account};
 use frame_system::RawOrigin;
 
 benchmarks!{
@@ -17,5 +17,23 @@ benchmarks!{
 		assert_eq!(KittyNumber::<T>::get(), 1);
 	}
 
+	change_owner {
+		let caller: T::AccountId = whitelisted_caller();
+
+		let caller_origin = <T as frame_system::Config>::Origin::from(RawOrigin::Signed(caller.clone()));
+		Kitties::<T>::create_kitty(caller_origin);
+		let kitty_id = KittyNumber::<T>::get();
+		let receiver: T::AccountId = account("receiver", 0, 0);
+		
+	}: change_owner(RawOrigin::Signed(caller), kitty_id, receiver.clone())
+
+	verify {
+		let kitties = <KittyOwner<T>>::get(receiver.clone());
+		assert_eq!(kitties.unwrap().len(), 1);
+	}
+
 	impl_benchmark_test_suite!(Kitties, crate::mock::new_test_ext(), crate::mock::Test);
+
+
+	
 }
