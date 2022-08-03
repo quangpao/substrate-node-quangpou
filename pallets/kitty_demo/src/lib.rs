@@ -190,6 +190,8 @@ pub mod pallet {
 
 		}
 
+		
+
 		#[pallet::weight(21_900_000 + T::DbWeight::get().reads_writes(3, 2))]
 		pub fn change_owner(origin: OriginFor<T>, kitty_id: Id, new_owner: T::AccountId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
