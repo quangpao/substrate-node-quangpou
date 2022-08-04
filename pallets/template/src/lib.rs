@@ -37,9 +37,6 @@ pub mod pallet {
 	// Learn more about declaring storage items:
 	// https://docs.substrate.io/v3/runtime/storage#declaring-storage-items
 	pub type Something<T> = StorageValue<_, u32>;
-	
-	#[pallet::storage]
-	pub type FiboNumber<T> = StorageValue<_, u32>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://docs.substrate.io/v3/runtime/events-and-errors
@@ -48,7 +45,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
-		SomethingStored(u32, T::AccountId),
+		SomethingStored(u32, <T as frame_system::Config>::AccountId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -60,6 +57,26 @@ pub mod pallet {
 		StorageOverflow,
 	}
 
+	#[pallet::genesis_config]
+	pub struct GenesisConfig{
+		pub genesis_value: u32,
+	}
+
+	#[cfg(feature = "std")]
+	impl Default for GenesisConfig {
+		fn default() -> GenesisConfig {
+			GenesisConfig {
+				genesis_value: 0u32,
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T:Config> GenesisBuild<T> for GenesisConfig{
+		fn build(&self) {
+			Something::<T>::put(self.genesis_value)
+		}
+	}
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
@@ -83,26 +100,6 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn find_n_fibo(origin: OriginFor<T>, number: u32) -> DispatchResult {
-			// Check that the extrinsic was signed and get the signer.
-			// This function will return an error if the extrinsic is not signed.
-			// https://docs.substrate.io/v3/runtime/origins
-			let who = ensure_signed(origin)?;
-
-			//find fibonacci number
-			let fibo_number = fibo(number);
-
-			// Update storage.
-			<FiboNumber<T>>::put(fibo_number);
-
-			// Emit an event.
-			Self::deposit_event(Event::SomethingStored(fibo_number, who));
-			// Return a successful DispatchResultWithPostInfo
-			Ok(())
-		}
-
-
 		/// An example dispatchable that may throw a custom error.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
@@ -120,30 +117,6 @@ pub mod pallet {
 					Ok(())
 				},
 			}
-		}
-
-		// #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		// pub fn put_number(origin: OriginFor<T>, number: u32) -> DispatchResult {
-
-
-		// 	let who: <T as Config>::AccountId = ensure_signed(origin)?;
-
-		// 	<Number<T>>::insert(key:who.clone(), val:number);
-
-		// 	Self::deposit_event(Event::Something(number, who));
-		// 	Ok(())
-
-		// }
-	}
-
-
-	fn fibo(n: u32) -> u32 {
-		if n == 0 {
-			return 0;
-		} else if n == 1 {
-			return 1;
-		} else {
-			return fibo(n - 1) + fibo(n - 2);
 		}
 	}
 }

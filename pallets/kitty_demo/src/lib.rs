@@ -139,6 +139,52 @@ pub mod pallet {
 
 	}
 
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config>{
+		pub kitties: Vec<(T::AccountId, Vec<u8>)>,
+		pub time: u64,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> GenesisConfig<T> {
+			GenesisConfig {
+				kitties: Vec::new(),
+				time: 0u64,
+			}
+		}
+
+	}
+
+	#[pallet::genesis_build]
+	impl<T:Config> GenesisBuild<T> for GenesisConfig<T>{
+		fn build(&self) {
+			KittyNumber::<T>::put(self.kitties.len() as Id);
+			let mut i = 0;
+			for(owner, dna) in self.kitties.iter(){
+				i+= 1;
+				let gender = Pallet::<T>::gen_gender(dna.clone()).unwrap();
+				let kitty = Kitties::<T>{
+					id: i,
+					dna: dna.clone(),
+					owner: owner.clone(),
+					price: 0u32.into(),
+					gender: gender,
+					create_date: T::TimeProvider::now().as_secs(),
+				};
+				<Kitty<T>>::insert(i, kitty);
+				let kitty_owner = <KittyOwner<T>>::get(owner.clone());
+				let mut kitty_owner = match kitty_owner {
+					Some(k) => k,
+					None => Vec::new(),
+				};
+				let kitty = <Kitty<T>>::get(i);
+				kitty_owner.push(kitty.unwrap());
+				<KittyOwner<T>>::insert(owner.clone(), kitty_owner);
+			}
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
